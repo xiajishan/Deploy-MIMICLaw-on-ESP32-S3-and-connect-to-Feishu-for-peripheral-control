@@ -74,7 +74,7 @@
 #define MIMI_AGENT_STACK             (24 * 1024)
 #define MIMI_AGENT_PRIO              6
 #define MIMI_AGENT_CORE              1
-#define MIMI_AGENT_MAX_HISTORY       20
+#define MIMI_AGENT_MAX_HISTORY       2
 #define MIMI_AGENT_MAX_TOOL_ITER     10
 #define MIMI_MAX_TOOL_CALLS          4
 #define MIMI_AGENT_SEND_WORKING_STATUS 1
@@ -85,11 +85,12 @@
 /* LLM */
 #define MIMI_LLM_DEFAULT_MODEL       "claude-opus-4-5"
 #define MIMI_LLM_PROVIDER_DEFAULT    "anthropic"
-#define MIMI_LLM_MAX_TOKENS          4096
+#define MIMI_LLM_MAX_TOKENS          2048
 #define MIMI_LLM_API_URL             "https://api.anthropic.com/v1/messages"
 #define MIMI_OPENAI_API_URL          "https://api.openai.com/v1/chat/completions"
 #define MIMI_OPENROUTER_API_URL      "https://openrouter.ai/api/v1/chat/completions"
 #define MIMI_STEPFUN_API_URL         "https://api.stepfun.com/v1/chat/completions"
+#define MIMI_DEEPSEEK_API_URL        "https://api.deepseek.com/v1/chat/completions"
 #define MIMI_LLM_API_VERSION         "2023-06-01"
 #define MIMI_LLM_STREAM_BUF_SIZE     (32 * 1024)
 #define MIMI_LLM_LOG_VERBOSE_PAYLOAD 0

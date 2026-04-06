@@ -197,13 +197,19 @@ static bool provider_is_stepfun(void)
     return strcmp(s_provider, "stepfun") == 0;
 }
 
+static bool provider_is_deepseek(void)
+{
+    return strcmp(s_provider, "deepseek") == 0;
+}
+
 static bool provider_uses_openai_format(void)
 {
-    return provider_is_openai() || provider_is_openrouter() || provider_is_stepfun();
+    return provider_is_openai() || provider_is_openrouter() || provider_is_stepfun() || provider_is_deepseek();
 }
 
 static const char *llm_api_url(void)
 {
+    if (provider_is_deepseek()) return MIMI_DEEPSEEK_API_URL;
     if (provider_is_stepfun()) return MIMI_STEPFUN_API_URL;
     if (provider_is_openrouter()) return MIMI_OPENROUTER_API_URL;
     if (provider_is_openai()) return MIMI_OPENAI_API_URL;
@@ -212,6 +218,7 @@ static const char *llm_api_url(void)
 
 static const char *llm_api_host(void)
 {
+    if (provider_is_deepseek()) return "api.deepseek.com";
     if (provider_is_stepfun()) return "api.stepfun.com";
     if (provider_is_openrouter()) return "openrouter.ai";
     if (provider_is_openai()) return "api.openai.com";
@@ -240,24 +247,32 @@ esp_err_t llm_proxy_init(void)
         safe_copy(s_provider, sizeof(s_provider), MIMI_SECRET_MODEL_PROVIDER);
     }
 
-    /* NVS overrides take highest priority (set via CLI) */
+    /* NVS overrides only if secrets are empty */
     nvs_handle_t nvs;
     if (nvs_open(MIMI_NVS_LLM, NVS_READONLY, &nvs) == ESP_OK) {
         char tmp[LLM_API_KEY_MAX_LEN] = {0};
         size_t len = sizeof(tmp);
         if (nvs_get_str(nvs, MIMI_NVS_KEY_API_KEY, tmp, &len) == ESP_OK && tmp[0]) {
-            ESP_LOGI(TAG, "NVS override: API key (len=%d)", (int)strlen(tmp));
-            safe_copy(s_api_key, sizeof(s_api_key), tmp);
+            if (s_api_key[0] == '\0') {
+                ESP_LOGI(TAG, "NVS override: API key (len=%d)", (int)strlen(tmp));
+                safe_copy(s_api_key, sizeof(s_api_key), tmp);
+            } else {
+                ESP_LOGI(TAG, "NVS has API key but secrets take priority");
+            }
         }
         char model_tmp[LLM_MODEL_MAX_LEN] = {0};
         len = sizeof(model_tmp);
         if (nvs_get_str(nvs, MIMI_NVS_KEY_MODEL, model_tmp, &len) == ESP_OK && model_tmp[0]) {
-            safe_copy(s_model, sizeof(s_model), model_tmp);
+            if (s_model[0] == '\0') {
+                safe_copy(s_model, sizeof(s_model), model_tmp);
+            }
         }
         char provider_tmp[16] = {0};
         len = sizeof(provider_tmp);
         if (nvs_get_str(nvs, MIMI_NVS_KEY_PROVIDER, provider_tmp, &len) == ESP_OK && provider_tmp[0]) {
-            safe_copy(s_provider, sizeof(s_provider), provider_tmp);
+            if (s_provider[0] == '\0') {
+                safe_copy(s_provider, sizeof(s_provider), provider_tmp);
+            }
         }
         nvs_close(nvs);
     }
@@ -295,6 +310,8 @@ static esp_err_t llm_http_direct(const char *post_data, resp_buf_t *rb, int *out
             char auth[LLM_API_KEY_MAX_LEN + 16];
             snprintf(auth, sizeof(auth), "Bearer %s", s_api_key);
             esp_http_client_set_header(client, "Authorization", auth);
+            ESP_LOGI(TAG, "Set Authorization header for OpenAI-format provider: %s", s_provider);
+            ESP_LOGI(TAG, "API key length: %d, auth header: %s", (int)strlen(s_api_key), auth);
         }
         if (provider_is_openrouter()) {
             esp_http_client_set_header(client, "HTTP-Referer", "https://github.com/memovai/mimiclaw");
@@ -306,8 +323,11 @@ static esp_err_t llm_http_direct(const char *post_data, resp_buf_t *rb, int *out
     }
     esp_http_client_set_post_field(client, post_data, strlen(post_data));
 
+    ESP_LOGI(TAG, "HTTP POST to: %s", llm_api_url());
     esp_err_t err = esp_http_client_perform(client);
-    *out_status = esp_http_client_get_status_code(client);
+    int status = esp_http_client_get_status_code(client);
+    ESP_LOGI(TAG, "HTTP status: %d, err: %s", status, esp_err_to_name(err));
+    *out_status = status;
     esp_http_client_cleanup(client);
     return err;
 }

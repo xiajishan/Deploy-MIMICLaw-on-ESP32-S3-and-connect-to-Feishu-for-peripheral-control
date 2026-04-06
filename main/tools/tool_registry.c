@@ -183,11 +183,11 @@ esp_err_t tool_registry_init(void)
 
     mimi_tool_t gw = {
         .name = "gpio_write",
-        .description = "Set a GPIO pin HIGH or LOW. Controls LEDs, relays, and other digital outputs.",
+        .description = "设置GPIO引脚电平。调用此工具来控制LED、继电器等设备。",
         .input_schema_json =
             "{\"type\":\"object\","
-            "\"properties\":{\"pin\":{\"type\":\"integer\",\"description\":\"GPIO pin number\"},"
-            "\"state\":{\"type\":\"integer\",\"description\":\"1 for HIGH, 0 for LOW\"}},"
+            "\"properties\":{\"pin\":{\"type\":\"integer\",\"description\":\"GPIO引脚号\",\"minimum\":1,\"maximum\":48},"
+            "\"state\":{\"type\":\"integer\",\"description\":\"电平状态: 1=高电平, 0=低电平\",\"minimum\":0,\"maximum\":1}},"
             "\"required\":[\"pin\",\"state\"]}",
         .execute = tool_gpio_write_execute,
     };
@@ -195,10 +195,10 @@ esp_err_t tool_registry_init(void)
 
     mimi_tool_t gr = {
         .name = "gpio_read",
-        .description = "Read a GPIO pin state. Returns HIGH or LOW. Use for checking switches, sensors, and digital inputs.",
+        .description = "读取GPIO引脚状态。调用此工具来检测开关、传感器状态。",
         .input_schema_json =
             "{\"type\":\"object\","
-            "\"properties\":{\"pin\":{\"type\":\"integer\",\"description\":\"GPIO pin number\"}},"
+            "\"properties\":{\"pin\":{\"type\":\"integer\",\"description\":\"GPIO引脚号\",\"minimum\":1,\"maximum\":48}},"
             "\"required\":[\"pin\"]}",
         .execute = tool_gpio_read_execute,
     };
@@ -206,7 +206,7 @@ esp_err_t tool_registry_init(void)
 
     mimi_tool_t ga = {
         .name = "gpio_read_all",
-        .description = "Read all allowed GPIO pin states in a single call. Returns each pin's HIGH/LOW state.",
+        .description = "一次性读取所有允许的GPIO引脚状态。返回每个引脚的高/低电平状态。Read all allowed GPIO pins.",
         .input_schema_json =
             "{\"type\":\"object\","
             "\"properties\":{},"
@@ -220,12 +220,12 @@ esp_err_t tool_registry_init(void)
 
     mimi_tool_t sc = {
         .name = "servo_control",
-        .description = "Control a servo motor to rotate to a specific angle. Channel 1 uses GPIO38, channel 2 uses GPIO46. Angle range: 0-180 degrees.",
+        .description = "控制舵机旋转到指定角度。舵机1使用GPIO38，舵机2使用GPIO46。调用此工具来控制舵机转动。",
         .input_schema_json =
             "{\"type\":\"object\","
             "\"properties\":{"
-            "\"channel\":{\"type\":\"integer\",\"description\":\"Servo channel: 1 or 2\"},"
-            "\"angle\":{\"type\":\"integer\",\"description\":\"Target angle: 0 to 180 degrees\"}"
+            "\"channel\":{\"type\":\"integer\",\"description\":\"舵机通道编号\",\"minimum\":1,\"maximum\":2},"
+            "\"angle\":{\"type\":\"integer\",\"description\":\"目标角度(0-180度)\",\"minimum\":0,\"maximum\":180}"
             "},"
             "\"required\":[\"channel\",\"angle\"]}",
         .execute = tool_servo_control_execute,
